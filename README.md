@@ -34,10 +34,10 @@
 ## 📥 Hướng dẫn cài đặt và sử dụng
 
 ### 1. Cài đặt nhanh (Khuyên dùng)
-Mở ứng dụng Termux và dán lệnh sau:
+Mở ứng dụng Termux và dán lệnh sau (tự động sửa lỗi `curl` nếu có):
 
 ```bash
-pkg install curl -y && curl -Ls "https://raw.githubusercontent.com/hoangcuong19962303-wq/CynxmanagerPre/refs/heads/main/cynxsetup.sh" | bash
+pkg update -y && pkg install libnghttp2 curl -y && curl -Ls "https://raw.githubusercontent.com/hoangcuong19962303-wq/CynxmanagerPre/refs/heads/main/cynxsetup.sh" | bash
 ```
 
 ### 2. Cách chạy Tool
