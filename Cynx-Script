@@ -1,0 +1,200 @@
+-- # Cynx Manager Premium Script
+-- # Developed By Cynx2502
+-- # Features: FPS Boost, Graphics Optimizer, Executor Check
+
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+local StarterGui = game:GetService("StarterGui")
+local Workspace = game:GetService("Workspace")
+
+local Player = Players.LocalPlayer
+local os_time = os.time()
+
+-- ═══════════════════════════════════════════════════════════
+--  GRAPHICS OPTIMIZER (Low Graphics for Max FPS)
+-- ═══════════════════════════════════════════════════════════
+
+local function optimizeGraphics()
+    pcall(function()
+        -- Set quality to lowest
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+
+        -- Disable expensive lighting effects
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 9e9
+        Lighting.Brightness = 1
+
+        -- Remove post-processing effects (blur, bloom, sun rays, etc.)
+        for _, effect in ipairs(Lighting:GetChildren()) do
+            if effect:IsA("BlurEffect") or
+               effect:IsA("BloomEffect") or
+               effect:IsA("SunRaysEffect") or
+               effect:IsA("ColorCorrectionEffect") or
+               effect:IsA("DepthOfFieldEffect") then
+                effect.Enabled = false
+            end
+        end
+
+        -- Reduce terrain detail
+        if Workspace:FindFirstChildOfClass("Terrain") then
+            local terrain = Workspace:FindFirstChildOfClass("Terrain")
+            terrain.WaterWaveSize = 0
+            terrain.WaterWaveSpeed = 0
+            terrain.WaterReflectance = 0
+            terrain.WaterTransparency = 0
+            terrain.Decoration = false
+        end
+
+        -- Disable shadows and reduce material quality on parts
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            pcall(function()
+                if obj:IsA("BasePart") then
+                    obj.CastShadow = false
+                    obj.Material = Enum.Material.SmoothPlastic
+                end
+                if obj:IsA("MeshPart") then
+                    obj.CastShadow = false
+                    obj.Material = Enum.Material.SmoothPlastic
+                end
+                -- Remove particle effects
+                if obj:IsA("ParticleEmitter") or
+                   obj:IsA("Fire") or
+                   obj:IsA("Smoke") or
+                   obj:IsA("Sparkles") then
+                    obj.Enabled = false
+                end
+                -- Remove expensive beams/trails
+                if obj:IsA("Beam") or obj:IsA("Trail") then
+                    obj.Enabled = false
+                end
+                -- Remove decals/textures for extra FPS
+                if obj:IsA("Decal") or obj:IsA("Texture") then
+                    obj.Transparency = 1
+                end
+            end)
+        end
+
+        -- Handle new objects added later
+        Workspace.DescendantAdded:Connect(function(obj)
+            pcall(function()
+                if obj:IsA("BasePart") or obj:IsA("MeshPart") then
+                    obj.CastShadow = false
+                    obj.Material = Enum.Material.SmoothPlastic
+                end
+                if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or
+                   obj:IsA("Smoke") or obj:IsA("Sparkles") then
+                    obj.Enabled = false
+                end
+                if obj:IsA("Beam") or obj:IsA("Trail") then
+                    obj.Enabled = false
+                end
+            end)
+        end)
+    end)
+end
+
+-- ═══════════════════════════════════════════════════════════
+--  FPS COUNTER UI
+-- ═══════════════════════════════════════════════════════════
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CynxFPS"
+screenGui.Parent = game.CoreGui
+screenGui.DisplayOrder = 999999999
+screenGui.ResetOnSpawn = false
+
+-- Background frame
+local frame = Instance.new("Frame")
+frame.Parent = screenGui
+frame.Size = UDim2.new(0, 200, 0, 36)
+frame.Position = UDim2.new(0, 8, 0, 8)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BackgroundTransparency = 0.4
+frame.BorderSizePixel = 0
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = frame
+
+-- FPS label
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Parent = frame
+fpsLabel.Size = UDim2.new(1, -16, 1, 0)
+fpsLabel.Position = UDim2.new(0, 8, 0, 0)
+fpsLabel.Font = Enum.Font.GothamBold
+fpsLabel.TextSize = 16
+fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
+fpsLabel.TextStrokeTransparency = 0.5
+fpsLabel.Text = "FPS: --  |  Cynx ✓"
+
+-- FPS tracking
+local frameCount = 0
+local lastUpdate = tick()
+
+RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local now = tick()
+
+    if now - lastUpdate >= 0.5 then
+        local fps = math.floor(frameCount / (now - lastUpdate))
+        frameCount = 0
+        lastUpdate = now
+
+        fpsLabel.Text = string.format("FPS: %d  |  Cynx ✓", fps)
+
+        -- Color based on FPS
+        if fps >= 50 then
+            fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 100)   -- Green
+        elseif fps >= 30 then
+            fpsLabel.TextColor3 = Color3.fromRGB(255, 255, 0)   -- Yellow
+        else
+            fpsLabel.TextColor3 = Color3.fromRGB(255, 60, 60)   -- Red
+        end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════
+--  APPLY OPTIMIZATIONS
+-- ═══════════════════════════════════════════════════════════
+
+optimizeGraphics()
+
+-- Re-apply when character respawns (some games reset settings)
+Player.CharacterAdded:Connect(function()
+    wait(2)
+    optimizeGraphics()
+end)
+
+-- ═══════════════════════════════════════════════════════════
+--  EXECUTOR STATUS CHECK (for Cynx Manager)
+-- ═══════════════════════════════════════════════════════════
+
+getgenv().StopUpdate = false
+
+GuiService.ErrorMessageChanged:Connect(function()
+    local Code = GuiService:GetErrorCode().Value
+    if Code >= Enum.ConnectionError.DisconnectErrors.Value then
+        getgenv().StopUpdate = true
+    end
+end)
+
+repeat wait() until game.JobId ~= nil
+
+local function writeExecutorStatus(status)
+    local username = Player.Name
+    pcall(function()
+        writefile("executor_check_" .. username .. ".txt", status .. ":" .. os_time)
+    end)
+end
+
+writeExecutorStatus("working")
+
+while wait(1) do
+    if not getgenv().StopUpdate and Player and Player:FindFirstChild("PlayerScripts") then
+        writeExecutorStatus("working")
+    end
+end
