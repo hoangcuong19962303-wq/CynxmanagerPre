@@ -1,6 +1,6 @@
 -- # Cynx Manager Premium Script
 -- # Developed By Cynx2502
--- # Features: FPS Boost, Graphics Optimizer, Executor Check
+-- # Features: Extreme FPS Boost (Brutal Mode), Graphics Optimizer, Executor Check
 
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
@@ -8,89 +8,100 @@ local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
 local StarterGui = game:GetService("StarterGui")
 local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
 
 local Player = Players.LocalPlayer
 local os_time = os.time()
 
 -- ═══════════════════════════════════════════════════════════
---  GRAPHICS OPTIMIZER (Low Graphics for Max FPS)
+--  EXTREME GRAPHICS OPTIMIZER (Tối ưu tàn bạo nhất)
 -- ═══════════════════════════════════════════════════════════
 
 local function optimizeGraphics()
     pcall(function()
-        -- Set quality to lowest
+        -- 1. Game Settings
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+        settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level04
+        
+        -- Override Lighting Technology if supported
+        pcall(function() sethiddenproperty(Lighting, "Technology", 2) end)
 
-        -- Disable expensive lighting effects
+        -- 2. Lighting & Environment
         Lighting.GlobalShadows = false
         Lighting.FogEnd = 9e9
-        Lighting.Brightness = 1
+        Lighting.Brightness = 0
+        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        Lighting.ClockTime = 12
 
-        -- Remove post-processing effects (blur, bloom, sun rays, etc.)
+        -- 3. Xoá toàn bộ hiệu ứng môi trường
         for _, effect in ipairs(Lighting:GetChildren()) do
-            if effect:IsA("BlurEffect") or
-               effect:IsA("BloomEffect") or
-               effect:IsA("SunRaysEffect") or
-               effect:IsA("ColorCorrectionEffect") or
-               effect:IsA("DepthOfFieldEffect") then
-                effect.Enabled = false
+            if effect:IsA("PostEffect") or effect:IsA("BlurEffect") or effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("Atmosphere") or effect:IsA("Sky") then
+                effect:Destroy()
             end
         end
 
-        -- Reduce terrain detail
-        if Workspace:FindFirstChildOfClass("Terrain") then
-            local terrain = Workspace:FindFirstChildOfClass("Terrain")
+        -- 4. Giảm Terrain
+        local terrain = Workspace:FindFirstChildOfClass("Terrain")
+        if terrain then
             terrain.WaterWaveSize = 0
             terrain.WaterWaveSpeed = 0
             terrain.WaterReflectance = 0
-            terrain.WaterTransparency = 0
+            terrain.WaterTransparency = 1
             terrain.Decoration = false
+            -- Xoá màu sắc terrain
+            pcall(function()
+                terrain.MaterialColors = {}
+                terrain:Clear() -- Giữ cẩn thận, clear() có thể phá map, nên chỉ chỉnh shader
+            end)
         end
 
-        -- Disable shadows and reduce material quality on parts
-        for _, obj in ipairs(Workspace:GetDescendants()) do
+        -- 5. Lặp qua tất cả Parts trong map và tối ưu tàn bạo
+        local function optimizePart(obj)
             pcall(function()
-                if obj:IsA("BasePart") then
+                if obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part") then
                     obj.CastShadow = false
                     obj.Material = Enum.Material.SmoothPlastic
+                    obj.Reflectance = 0
                 end
-                if obj:IsA("MeshPart") then
-                    obj.CastShadow = false
-                    obj.Material = Enum.Material.SmoothPlastic
-                end
-                -- Remove particle effects
-                if obj:IsA("ParticleEmitter") or
-                   obj:IsA("Fire") or
-                   obj:IsA("Smoke") or
-                   obj:IsA("Sparkles") then
+                
+                -- Vô hiệu hóa hiệu ứng hạt và tia cực đoan
+                if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
                     obj.Enabled = false
+                    -- Đặt size = 0 để giảm render cost
+                    pcall(function() obj.Rate = 0 end)
                 end
-                -- Remove expensive beams/trails
-                if obj:IsA("Beam") or obj:IsA("Trail") then
-                    obj.Enabled = false
-                end
-                -- Remove decals/textures for extra FPS
+                
+                -- Xóa Decal, Texture để đỡ load ảnh
                 if obj:IsA("Decal") or obj:IsA("Texture") then
                     obj.Transparency = 1
                 end
+                
+                -- Bóp tụt Clothing (Shirt, Pants, ShirtGraphic) - không xoá để tránh lỗi game check
+                if obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("CharacterMesh") then
+                    -- Không destroy, chỉ xóa texture id
+                    pcall(function() obj.ShirtTemplate = "" end)
+                    pcall(function() obj.PantsTemplate = "" end)
+                    pcall(function() obj.Graphic = "" end)
+                end
+                
+                -- Tắt hiệu ứng âm thanh 3D dội vang
+                if obj:IsA("Sound") then
+                    obj.MaxDistance = 0
+                    obj.Volume = 0
+                end
             end)
         end
 
-        -- Handle new objects added later
+        local descendants = Workspace:GetDescendants()
+        for i = 1, #descendants do
+            optimizePart(descendants[i])
+            -- Nhường CPU mỗi 500 block để không freeze game lúc init
+            if i % 500 == 0 then RunService.Heartbeat:Wait() end
+        end
+
+        -- Lắng nghe và tiêu diệt ngay lập tức object mới
         Workspace.DescendantAdded:Connect(function(obj)
-            pcall(function()
-                if obj:IsA("BasePart") or obj:IsA("MeshPart") then
-                    obj.CastShadow = false
-                    obj.Material = Enum.Material.SmoothPlastic
-                end
-                if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or
-                   obj:IsA("Smoke") or obj:IsA("Sparkles") then
-                    obj.Enabled = false
-                end
-                if obj:IsA("Beam") or obj:IsA("Trail") then
-                    obj.Enabled = false
-                end
-            end)
+            optimizePart(obj)
         end)
     end)
 end
@@ -101,7 +112,7 @@ end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CynxFPS"
-screenGui.Parent = game.CoreGui
+screenGui.Parent = pcall(function() return CoreGui end) and CoreGui or Player:WaitForChild("PlayerGui")
 screenGui.DisplayOrder = 999999999
 screenGui.ResetOnSpawn = false
 
@@ -110,8 +121,8 @@ local frame = Instance.new("Frame")
 frame.Parent = screenGui
 frame.Size = UDim2.new(0, 200, 0, 36)
 frame.Position = UDim2.new(0, 8, 0, 8)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BackgroundTransparency = 0.4
+frame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+frame.BackgroundTransparency = 0.3
 frame.BorderSizePixel = 0
 
 local corner = Instance.new("UICorner")
@@ -128,8 +139,8 @@ fpsLabel.TextSize = 16
 fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
 fpsLabel.BackgroundTransparency = 1
 fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
-fpsLabel.TextStrokeTransparency = 0.5
-fpsLabel.Text = "FPS: --  |  Cynx ✓"
+fpsLabel.TextStrokeTransparency = 0.3
+fpsLabel.Text = "FPS: --  |  Cynx MAX"
 
 -- FPS tracking
 local frameCount = 0
@@ -144,15 +155,14 @@ RunService.RenderStepped:Connect(function()
         frameCount = 0
         lastUpdate = now
 
-        fpsLabel.Text = string.format("FPS: %d  |  Cynx ✓", fps)
+        fpsLabel.Text = string.format("FPS: %d  | By Cynx2502", fps)
 
-        -- Color based on FPS
         if fps >= 50 then
-            fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 100)   -- Green
+            fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
         elseif fps >= 30 then
-            fpsLabel.TextColor3 = Color3.fromRGB(255, 255, 0)   -- Yellow
+            fpsLabel.TextColor3 = Color3.fromRGB(240, 240, 0)
         else
-            fpsLabel.TextColor3 = Color3.fromRGB(255, 60, 60)   -- Red
+            fpsLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
         end
     end
 end)
@@ -165,7 +175,7 @@ optimizeGraphics()
 
 -- Re-apply when character respawns (some games reset settings)
 Player.CharacterAdded:Connect(function()
-    wait(2)
+    task.wait(2)
     optimizeGraphics()
 end)
 
@@ -182,7 +192,7 @@ GuiService.ErrorMessageChanged:Connect(function()
     end
 end)
 
-repeat wait() until game.JobId ~= nil
+repeat task.wait(0.5) until game.JobId ~= nil
 
 local function writeExecutorStatus(status)
     local username = Player.Name
@@ -193,8 +203,10 @@ end
 
 writeExecutorStatus("working")
 
-while wait(1) do
-    if not getgenv().StopUpdate and Player and Player:FindFirstChild("PlayerScripts") then
-        writeExecutorStatus("working")
+coroutine.wrap(function()
+    while task.wait(3) do
+        if not getgenv().StopUpdate and Player and Player:FindFirstChild("PlayerScripts") then
+            writeExecutorStatus("working")
+        end
     end
-end
+end)()
