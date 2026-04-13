@@ -1,68 +1,150 @@
-# 🛡️ Cynx Manager - Premium Edition (Pre-Release)
+# 🛡️ Cynx Manager - Premium Edition
 
 ![Banner](https://img.shields.io/badge/Status-Premium-gold?style=for-the-badge&logo=roblox)
-![Version](https://img.shields.io/badge/Version-2.2.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-2.5.0-blue?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Platform-Android_Root-green?style=for-the-badge&logo=android)
+![Python](https://img.shields.io/badge/Python-3.8_→_3.15+-yellow?style=for-the-badge&logo=python)
+![Security](https://img.shields.io/badge/Security-Hardened_v2-red?style=for-the-badge&logo=shield)
 
-**Cynx Manager Premium** là công cụ quản lý và tối ưu hóa treo game (Auto Rejoin) chuyên nghiệp nhất dành cho Roblox trên Android (Termux). Phiên bản Premium được thiết kế đặc biệt để tối đa hóa hiệu năng thông qua hệ thống ép xung (Overclock) dành riêng cho máy **Root**.
+**Cynx Manager Premium** là công cụ quản lý và tối ưu hóa treo game (Auto Rejoin) chuyên nghiệp nhất dành cho Roblox trên Android (Termux). Được tối ưu đặc biệt cho **Cloud Phone ARM** với hiệu năng vượt trội.
 
 > [!IMPORTANT]
 > **Mua Key Bản Quyền**: Bạn cần có Key Premium để sử dụng Tool. Truy cập ngay: **[https://client.sieuthicloud247.com/](https://client.sieuthicloud247.com/)** để mua hoặc gia hạn Key.
 
 ---
 
-## ✨ Tính năng nổi bật (Premium Only)
+## 🆕 Changelog v2.5.0
 
-### 🚀 Hệ thống ép xung (Overclock Boost)
-- **CPU Performance**: Ép tất cả các nhân xử lý chạy ở công suất tối đa, ngăn tình trạng tụt xung nhịp khi máy nóng.
-- **GPU High-Performance**: Boost chip đồ họa (Adreno/Mali) lên mức cao nhất, tăng FPS đáng kể.
-- **Storage Optimizer**: Thực hiện `fstrim` và tối ưu I/O Scheduler giúp load dữ liệu game thần tốc.
-- **RAM Latency Tweak**: Giảm độ trễ RAM và ép hệ thống ưu tiên tài nguyên cho Roblox.
+### ⚡ Tối ưu hiệu năng (ARM Cloud Phone)
+- **Batch subprocess**: Gộp 50+ lệnh tối ưu hệ thống thành 1 script duy nhất
+- **Async HTTP monitoring**: Kiểm tra trạng thái tất cả users trong 1 API call (giảm ~90% thời gian)
+- **Cache thông minh**: Cache process list (3s), /proc reads (5s), giảm I/O disk
+- **Smart screen refresh**: Chỉ cập nhật khi có thay đổi (giảm ~70% terminal I/O)
+- **Tối ưu system chỉ chạy 1 lần** khi khởi động (kernel params không tự reset)
+- **Monitoring loop: từ ~40s → ~3s** mỗi vòng
 
-### 🤖 Smart Auto Rejoin 2.0
-- **Per-Package Crash Detection**: Tự động phát hiện và khởi động lại từng app clone riêng biệt nếu bị crash/văng.
-- **Stale Detection**: Nhận diện trường hợp treo máy, mất kết nối mạng để tự động Join lại game.
-- **Executor Check**: Đảm bảo Script (Luau) luôn được thực thi đúng cách sau mỗi lần Rejoin.
+### 🔒 Bảo mật Hardened v2
+- **HTTPS API**: License key được truyền qua HTTPS (không còn plaintext)
+- **POST authentication**: Key không bị lộ trong URL/server logs
+- **HWID đa nguồn**: Kết hợp 4 hardware identifiers + SHA256 hash (chống giả mạo)
+- **Encrypted license**: File key được mã hoá HMAC — vô dụng trên thiết bị khác
+- **Anti-tamper nâng cao**: Phát hiện exec() hook, frame inspection, runtime code hash
+- **Integrity verification**: SHA256 checksum cho tất cả file khi cài đặt
 
-### 🛡️ Bảo mật & Tiện ích
-- **Discord Webhook**: Gửi thông báo Rejoin và ảnh chụp màn hình định kỳ về máy điện thoại.
-- **Smart Optimizer**: Tự động dọn dẹp Cache và giải phóng ứng dụng chạy ngầm mỗi 10 phút.
-- **Cross-Version Support**: Tương thích hoàn toàn với Python 3.8 đến 3.15+ trên mọi phiên bản Termux.
+### 🔔 Webhook Fix & Cải tiến
+- **Auto-start**: Webhook tự khởi động khi restart tool (nếu đã cấu hình)
+- **Screenshot fallback**: Gửi text-only nếu không chụp được màn hình
+- **Multi-method screenshot**: Thử 3 phương pháp chụp (binary, shell, su)
+- **Test trước khi chạy**: Gửi tin nhắn thử ngay khi setup
+- **Discord rate limit**: Tự xử lý HTTP 429 với retry thông minh
+
+### 🐛 Bug Fixes
+- Fix accounts/server_links lệch gây crash
+- Fix `asyncio.run()` crash trên Python 3.8-3.9
+- Fix executor check block 230s trong monitoring loop (giảm còn 15s)
+- Fix `kill_all_roblox()` scan lại packages mỗi lần (dùng cache)
 
 ---
 
-## 📥 Hướng dẫn cài đặt và sử dụng
+## ✨ Tính năng chính
 
-### 1. Cài đặt nhanh (Khuyên dùng)
-Mở ứng dụng Termux và dán lệnh sau (tự động sửa lỗi `curl` nếu có):
+### 🚀 Hệ thống ép xung (Overclock Boost)
+- **CPU Performance**: Ép tất cả nhân xử lý chạy tối đa, chống throttle
+- **GPU High-Performance**: Boost Adreno/Mali lên performance mode
+- **Storage Optimizer**: fstrim + I/O Scheduler tối ưu cho game
+- **RAM Latency Tweak**: Giảm độ trễ RAM, ưu tiên tài nguyên cho Roblox
+- ⚡ Tất cả chạy **1 lần duy nhất** bằng 1 script gộp — không gây lag
 
+### 🤖 Smart Auto Rejoin 2.0
+- **Crash Detection**: Phát hiện app crash/văng → tự khởi động lại
+- **Stale Detection**: Phát hiện treo máy, mất kết nối → auto rejoin
+- **Executor Check**: Đảm bảo Lua script luôn active sau rejoin
+- **Batch Monitoring**: Kiểm tra tất cả accounts cùng lúc (1 API call)
+- **Force Rejoin**: Ép rejoin toàn bộ định kỳ (safety net)
+
+### 🛡️ Bảo mật
+- **License API**: HTTPS + POST body + HWID đa nguồn
+- **Encrypted storage**: Key mã hoá bằng HWID thiết bị
+- **Code protection**: 5 lớp mã hoá + 7 lớp anti-tamper
+- **Integrity check**: SHA256 verify file khi cài đặt
+
+### 🔔 Discord Webhook
+- Gửi thông báo rejoin alert + ảnh chụp màn hình định kỳ
+- Auto-start khi restart tool
+- Fallback text-only nếu screenshot fail
+- Rate limit handling
+
+### 📊 Lua Script In-Game (Cynx-Script)
+- **Extreme FPS Boost**: Tắt shadow, particles, post effects
+- **Graphics Optimizer**: Batch optimize tất cả objects
+- **FPS Counter**: Hiển thị FPS realtime
+- **Executor Status**: Báo cáo trạng thái cho Python tool
+
+---
+
+## 📥 Cài đặt
+
+### Cài đặt nhanh (Khuyên dùng)
 ```bash
 pkg update -y && pkg install libnghttp2 curl -y && curl -Ls "https://raw.githubusercontent.com/hoangcuong19962303-wq/CynxmanagerPre/refs/heads/main/cynxsetup.sh" | bash
 ```
 
-### 2. Cách chạy Tool
-Sau khi cài đặt xong, bạn có thể dùng lệnh ngắn:
+### Chạy Tool
 ```bash
 cynx
 ```
-*Lưu ý: Để kích hoạt các tính năng ép xung (Overclock), vui lòng cấp quyền Root cho Termux khi Tool yêu cầu.*
+
+> [!NOTE]
+> Cần cấp quyền **Root** cho Termux để kích hoạt tính năng ép xung và monitoring đầy đủ.
 
 ---
 
-## ⚙️ Cấu hình cơ bản
+## ⚙️ Cấu hình
 
-- **Force Rejoin Interval**: Chu kỳ ép Rejoin toàn bộ (mặc định 60 phút).
-- **Monitoring Delay**: Thời gian chờ giữa các lần kiểm tra trang thái (mặc định 25 giây).
-- **Stale Timeout**: Thời gian tối đa cho phép offline trước khi tự động Rejoin (mặc định 5 phút).
+| Cài đặt | Mặc định | Mô tả |
+|---------|----------|-------|
+| `force_rejoin_interval` | 60 phút | Chu kỳ ép rejoin toàn bộ |
+| `monitoring_delay` | 25 giây | Thời gian chờ giữa các lần check |
+| `stale_timeout` | 5 phút | Thời gian offline trước khi auto rejoin |
+| `executor_timeout` | 230 giây | Timeout chờ executor active |
+| `loop_sleep` | 90 giây | Sleep giữa các monitoring cycle |
+| `auto_clear_cache` | true | Tự xoá cache Roblox khi khởi động |
 
 ---
 
-## 📞 Hỗ trợ và Liên hệ
+## 📂 Cấu trúc file
 
-- **Mua Key Bản Quyền**: [https://client.sieuthicloud247.com/](https://client.sieuthicloud247.com/)
-- **Website Chính Thức**: [sieuthicloud247.com](https://sieuthicloud247.com)
+```
+📁 CynxmanagerPre/
+├── Cynx-Manager.py     # Tool chính (obfuscated)
+├── Cynx-Script          # Lua script in-game
+├── cynxsetup.sh         # Script cài đặt
+├── checksums.sha256     # SHA256 integrity hash
+├── Authencator          # Remote auth flag
+└── README.md            # File này
+```
+
+---
+
+## 📞 Hỗ trợ
+
+- **Mua Key**: [https://client.sieuthicloud247.com/](https://client.sieuthicloud247.com/)
+- **Website**: [sieuthicloud247.com](https://sieuthicloud247.com)
 - **Developer**: Cynx2502
-- **Telegram Support**: [@Cynx2502](https://t.me/Cynx2502)
+- **Telegram**: [@Cynx2502](https://t.me/Cynx2502)
 
 ---
-*© 2024-2026 Cynx Manager. All rights reserved.*
+
+## 📋 Yêu cầu hệ thống
+
+| Yêu cầu | Chi tiết |
+|----------|----------|
+| OS | Android 8.1+ (ARM) |
+| Root | ✅ Bắt buộc |
+| Terminal | Termux |
+| Python | 3.8 → 3.15+ |
+| RAM | 1GB+ khuyên dùng |
+| Mạng | Ổn định cho API calls |
+
+---
+*© 2024-2026 Cynx Manager Premium. Developed by Cynx2502. All rights reserved.*
