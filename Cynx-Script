@@ -1,12 +1,12 @@
 -- # Cynx Manager Premium Script
 -- # Developed By Cynx2502
 -- # Features: Extreme FPS Boost (Brutal Mode), Graphics Optimizer, Executor Check
+-- # v2.4.0 - Optimized for ARM Cloud Phones
 
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
-local StarterGui = game:GetService("StarterGui")
 local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
 
@@ -14,33 +14,87 @@ local Player = Players.LocalPlayer
 local os_time = os.time()
 
 -- ═══════════════════════════════════════════════════════════
---  EXTREME GRAPHICS OPTIMIZER (Tối ưu tàn bạo nhất)
+--  EXTREME GRAPHICS OPTIMIZER (optimized batch processing)
 -- ═══════════════════════════════════════════════════════════
+
+-- Pre-cache class checks to avoid repeated string comparisons
+local DISABLE_CLASSES = {
+    ParticleEmitter = true, Trail = true, Beam = true,
+    Fire = true, Smoke = true, Sparkles = true,
+}
+
+local HIDE_CLASSES = {
+    Decal = true, Texture = true,
+}
+
+local POST_EFFECT_CLASSES = {
+    BlurEffect = true, BloomEffect = true, SunRaysEffect = true,
+    ColorCorrectionEffect = true, DepthOfFieldEffect = true,
+    Atmosphere = true, Sky = true,
+}
+
+local function optimizePart(obj)
+    local className = obj.ClassName
+    
+    -- BasePart optimization
+    if obj:IsA("BasePart") then
+        obj.CastShadow = false
+        obj.Material = Enum.Material.SmoothPlastic
+        obj.Reflectance = 0
+        return
+    end
+    
+    -- Disable particle effects
+    if DISABLE_CLASSES[className] then
+        obj.Enabled = false
+        pcall(function() obj.Rate = 0 end)
+        return
+    end
+    
+    -- Hide decals/textures
+    if HIDE_CLASSES[className] then
+        obj.Transparency = 1
+        return
+    end
+    
+    -- Strip clothing textures (don't destroy to avoid game checks)
+    if className == "Shirt" then
+        pcall(function() obj.ShirtTemplate = "" end)
+    elseif className == "Pants" then
+        pcall(function() obj.PantsTemplate = "" end)
+    elseif className == "ShirtGraphic" then
+        pcall(function() obj.Graphic = "" end)
+    end
+    
+    -- Mute sounds
+    if obj:IsA("Sound") then
+        obj.MaxDistance = 0
+        obj.Volume = 0
+    end
+end
 
 local function optimizeGraphics()
     pcall(function()
         -- 1. Game Settings
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
         settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level04
-        
-        -- Override Lighting Technology if supported
         pcall(function() sethiddenproperty(Lighting, "Technology", 2) end)
 
-        -- 2. Lighting & Environment
+        -- 2. Lighting
         Lighting.GlobalShadows = false
         Lighting.FogEnd = 9e9
         Lighting.Brightness = 0
         Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
         Lighting.ClockTime = 12
 
-        -- 3. Xoá toàn bộ hiệu ứng môi trường
+        -- 3. Remove post effects
         for _, effect in ipairs(Lighting:GetChildren()) do
-            if effect:IsA("PostEffect") or effect:IsA("BlurEffect") or effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("Atmosphere") or effect:IsA("Sky") then
+            if POST_EFFECT_CLASSES[effect.ClassName] or effect:IsA("PostEffect") then
                 effect:Destroy()
             end
         end
 
-        -- 4. Giảm Terrain
+        -- 4. Terrain
         local terrain = Workspace:FindFirstChildOfClass("Terrain")
         if terrain then
             terrain.WaterWaveSize = 0
@@ -48,66 +102,29 @@ local function optimizeGraphics()
             terrain.WaterReflectance = 0
             terrain.WaterTransparency = 1
             terrain.Decoration = false
-            -- Xoá màu sắc terrain
-            pcall(function()
-                terrain.MaterialColors = {}
-                terrain:Clear() -- Giữ cẩn thận, clear() có thể phá map, nên chỉ chỉnh shader
-            end)
         end
 
-        -- 5. Lặp qua tất cả Parts trong map và tối ưu tàn bạo
-        local function optimizePart(obj)
-            pcall(function()
-                if obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part") then
-                    obj.CastShadow = false
-                    obj.Material = Enum.Material.SmoothPlastic
-                    obj.Reflectance = 0
-                end
-                
-                -- Vô hiệu hóa hiệu ứng hạt và tia cực đoan
-                if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
-                    obj.Enabled = false
-                    -- Đặt size = 0 để giảm render cost
-                    pcall(function() obj.Rate = 0 end)
-                end
-                
-                -- Xóa Decal, Texture để đỡ load ảnh
-                if obj:IsA("Decal") or obj:IsA("Texture") then
-                    obj.Transparency = 1
-                end
-                
-                -- Bóp tụt Clothing (Shirt, Pants, ShirtGraphic) - không xoá để tránh lỗi game check
-                if obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("CharacterMesh") then
-                    -- Không destroy, chỉ xóa texture id
-                    pcall(function() obj.ShirtTemplate = "" end)
-                    pcall(function() obj.PantsTemplate = "" end)
-                    pcall(function() obj.Graphic = "" end)
-                end
-                
-                -- Tắt hiệu ứng âm thanh 3D dội vang
-                if obj:IsA("Sound") then
-                    obj.MaxDistance = 0
-                    obj.Volume = 0
-                end
-            end)
-        end
-
+        -- 5. Batch optimize all descendants (yield every 1000 to prevent freeze)
         local descendants = Workspace:GetDescendants()
-        for i = 1, #descendants do
-            optimizePart(descendants[i])
-            -- Nhường CPU mỗi 500 block để không freeze game lúc init
-            if i % 500 == 0 then RunService.Heartbeat:Wait() end
+        local count = #descendants
+        for i = 1, count do
+            pcall(optimizePart, descendants[i])
+            -- Yield less frequently (1000 instead of 500) — reduces overhead
+            if i % 1000 == 0 then RunService.Heartbeat:Wait() end
         end
 
-        -- Lắng nghe và tiêu diệt ngay lập tức object mới
+        -- 6. Auto-optimize new objects (debounced)
         Workspace.DescendantAdded:Connect(function(obj)
-            optimizePart(obj)
+            -- Small delay to let object initialize before modifying
+            task.defer(function()
+                pcall(optimizePart, obj)
+            end)
         end)
     end)
 end
 
 -- ═══════════════════════════════════════════════════════════
---  FPS COUNTER UI
+--  FPS COUNTER UI (optimized — update every 1s instead of 0.5s)
 -- ═══════════════════════════════════════════════════════════
 
 local screenGui = Instance.new("ScreenGui")
@@ -116,7 +133,6 @@ screenGui.Parent = pcall(function() return CoreGui end) and CoreGui or Player:Wa
 screenGui.DisplayOrder = 999999999
 screenGui.ResetOnSpawn = false
 
--- Background frame
 local frame = Instance.new("Frame")
 frame.Parent = screenGui
 frame.Size = UDim2.new(0, 200, 0, 36)
@@ -129,7 +145,6 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 8)
 corner.Parent = frame
 
--- FPS label
 local fpsLabel = Instance.new("TextLabel")
 fpsLabel.Parent = frame
 fpsLabel.Size = UDim2.new(1, -16, 1, 0)
@@ -142,27 +157,41 @@ fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
 fpsLabel.TextStrokeTransparency = 0.3
 fpsLabel.Text = "FPS: --  |  Cynx MAX"
 
--- FPS tracking
+-- FPS tracking with longer update interval (1s instead of 0.5s)
 local frameCount = 0
 local lastUpdate = tick()
+local lastFps = 0
+local lastColor = Color3.fromRGB(0, 255, 100)
 
 RunService.RenderStepped:Connect(function()
     frameCount = frameCount + 1
     local now = tick()
+    local elapsed = now - lastUpdate
 
-    if now - lastUpdate >= 0.5 then
-        local fps = math.floor(frameCount / (now - lastUpdate))
+    -- Update display every 1 second (was 0.5s — reduces string ops by 50%)
+    if elapsed >= 1.0 then
+        local fps = math.floor(frameCount / elapsed)
         frameCount = 0
         lastUpdate = now
 
-        fpsLabel.Text = string.format("FPS: %d  | By Cynx2502", fps)
+        -- Only update text if FPS changed (avoid unnecessary property writes)
+        if fps ~= lastFps then
+            lastFps = fps
+            fpsLabel.Text = string.format("FPS: %d  | By Cynx2502", fps)
 
-        if fps >= 50 then
-            fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
-        elseif fps >= 30 then
-            fpsLabel.TextColor3 = Color3.fromRGB(240, 240, 0)
-        else
-            fpsLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+            local newColor
+            if fps >= 50 then
+                newColor = Color3.fromRGB(0, 255, 100)
+            elseif fps >= 30 then
+                newColor = Color3.fromRGB(240, 240, 0)
+            else
+                newColor = Color3.fromRGB(255, 50, 50)
+            end
+            
+            if newColor ~= lastColor then
+                lastColor = newColor
+                fpsLabel.TextColor3 = newColor
+            end
         end
     end
 end)
@@ -180,7 +209,7 @@ Player.CharacterAdded:Connect(function()
 end)
 
 -- ═══════════════════════════════════════════════════════════
---  EXECUTOR STATUS CHECK (for Cynx Manager)
+--  EXECUTOR STATUS CHECK (optimized — write every 5s instead of 3s)
 -- ═══════════════════════════════════════════════════════════
 
 getgenv().StopUpdate = false
@@ -204,7 +233,7 @@ end
 writeExecutorStatus("working")
 
 coroutine.wrap(function()
-    while task.wait(3) do
+    while task.wait(5) do  -- Was 3s, now 5s — reduce file I/O by 40%
         if not getgenv().StopUpdate and Player and Player:FindFirstChild("PlayerScripts") then
             writeExecutorStatus("working")
         end
